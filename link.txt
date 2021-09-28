@@ -1,0 +1,13 @@
+1. https://levelup.gitconnected.com/full-stack-web-tutorial-django-react-js-jwt-auth-rest-bootstrap-pagination-b00ebf7866c1
+
+2. https://github.com/timurbakibayev/crud_django_react/tree/main/sales/app
+
+3. https://hackernoon.com/110percent-complete-jwt-authentication-with-django-and-react-2020-iejq34ta
+
+4. https://medium.com/@dakota.lillie/django-react-jwt-authentication-5015ee00ef9a
+
+5. https://dev.to/koladev/django-rest-authentication-cmh
+
+6. https://github.com/SimpleJWT/drf-SimpleJWT-React
+
+7.https://blog.devgenius.io/django-react-authentication-part-1-d351726b284d
