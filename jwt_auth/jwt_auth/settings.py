@@ -28,7 +28,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -41,11 +40,14 @@ INSTALLED_APPS = [
     'authentication',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -60,8 +62,95 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
+
+        # 'rest_framework_simplejwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     )
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "https://example.com",
+    "https://sub.example.com",
+    "http://localhost:8080",
+    "http://127.0.0.1:9000",
+    "http://change.allowed.com",
+]
+
+# CSRF Integration
+'''
+Most sites will need to take advantage of the Cross-Site Request Forgery protection that Django offers. 
+CORS and CSRF are separate, and Django has no way of using your CORS configuration to exempt sites from the Referer checking that it does on secure requests. 
+The way to do that is with its CSRF_TRUSTED_ORIGINS setting.
+'''
+CSRF_TRUSTED_ORIGINS = [
+    "change.allowed.com",
+]
+
+# CORS_ALLOWED_ORIGIN_REGEXES
+'''
+A list of strings representing regexes that match Origins that are authorized to make 
+cross-site HTTP requests. Defaults to []. Useful when CORS_ALLOWED_ORIGINS is impractical, 
+such as when you have a large number of subdomains.
+'''
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://\w+\.example\.com$",
+]
+
+# CORS_ALLOW_ALL_ORIGINS: bool
+'''
+If True, all origins will be allowed. Other settings restricting allowed origins will be ignored. 
+Defaults to False.
+Setting this to True can be dangerous, as it allows any website to make cross-origin requests to yours. 
+Generally you’ll want to restrict the list of allowed origins with CORS_ALLOWED_ORIGINS or CORS_ALLOWED_ORIGIN_REGEXES.
+'''
+CORS_ALLOW_ALL_ORIGINS: True
+
+# CORS_URLS_REGEX: str | Pattern[str]
+'''
+A regex which restricts the URL’s for which the CORS headers will be sent. 
+Defaults to r'^.*$', i.e. match all URL’s. 
+Useful when you only need CORS on a part of your site, e.g. an API at /api/.
+'''
+CORS_URLS_REGEX = r"^/api/.*$"
+
+# CORS_ALLOW_METHODS: Sequence[str]
+'''
+A list of HTTP verbs that are allowed for the actual request.
+from corsheaders.defaults import default_methods
+
+CORS_ALLOW_METHODS = list(default_methods) + [
+    "POKE",
+]
+'''
+CORS_ALLOW_METHODS = [
+    "DELETE",
+    "GET",
+    "OPTIONS",
+    "PATCH",
+    "POST",
+    "PUT",
+]
+
+# CORS_ALLOW_HEADERS: Sequence[str]
+'''
+The list of non-standard HTTP headers that can be used when making the actual request.
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "my-custom-header",
+]
+'''
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
 
 '''
 ACCESS_TOKEN_LIFETIME
@@ -70,18 +159,44 @@ REFRESH_TOKEN_LIFETIME
      but the Access token only lasts a mere 5 minutes.
      That means, whenever your user tries to access something without a valid Access token, 
      it’ll get rejected, and then you need to send a refresh request from the frontend to the backend 
-     to get a new one.
+     to get a new one. 
+     refresh token only goes back to the authorization server, the access token goes to the (RS) resource server.
 '''
 
 '''
 ROTATE_REFRESH_TOKENS
     
 '''
+
+'''
+BLACKLIST_AFTER_ROTATION
+Logging out and blacklisting tokens:
+
+According to the JWT documentation, there isn’t really a way to log out in the conventional sense. 
+The tokens cannot be forced to expire before their time, and if you delete the token in a users’s localStorage, 
+but they somehow come up with a token that hasn’t yet expired(even that same one), they are able once again to access the website as a logged-in user.
+There are a few ways to tackle logging out. Just delete the tokens in localStorage1 + blacklist that token1 + blacklist all tokens for the user Deleting the tokens in localStorage
+alone means every token is still valid to use on the site. 
+
+The way we have set the project up for this tutorial, each time a user needs to use their refresh token to get a fresh access token, they are issued a fresh PAIR of tokens.
+A new refresh token with a new validity included, and the old pair is . The number of tokens per user will grow very quickly, 
+so blacklisting whatever token is currently in use doesn’t do much more than merely deleting the token. Unless of course you blacklist each old token after rotation, which you should. 
+
+Finally, blacklisting every single token for a user would force them to login again on every single device, not just the device they’re currently logged into.
+Let’s tackle option 2 as an exercise. First, take a look at settings.py. Ah, it looks like we are NOT blacklisting after rotation. 
+Better change that by adding the blacklist app from django-rest-framework-simplejwt and setting BLACKLIST_AFTER_ROTATION to True.
+
+The blacklist relies on saving blacklisted tokens in the database, so you know you have a migration to run.
+Now each time a token pair gets refreshed, the old ones get blacklisted.
+Next we need to add a button to our navbar to delete the localStorage tokens and to post the token to a blackout API view, 
+which we will make shortly. This will go in App.js for now, but making a dedicated Nav component at this point also makes sense.
+
+'''
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=5),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=14),
     'ROTATE_REFRESH_TOKENS': True,
-    'BLACKLIST_AFTER_ROTATION': False,
+    'BLACKLIST_AFTER_ROTATION': True,
     'UPDATE_LAST_LOGIN': False,
 
     'ALGORITHM': 'HS256',
