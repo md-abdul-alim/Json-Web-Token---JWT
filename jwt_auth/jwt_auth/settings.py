@@ -62,9 +62,12 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-
+        'rest_framework.authentication.TokenAuthentication',
         # 'rest_framework_simplejwt.authentication.JSONWebTokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
     )
 }
 
@@ -85,7 +88,7 @@ The way to do that is with its CSRF_TRUSTED_ORIGINS setting.
 CSRF_TRUSTED_ORIGINS = [
     "change.allowed.com",
 ]
-
+# CSRF_COOKIE_SECURE = False
 # CORS_ALLOWED_ORIGIN_REGEXES
 '''
 A list of strings representing regexes that match Origins that are authorized to make 
@@ -224,7 +227,6 @@ SIMPLE_JWT = {
 }
 
 ROOT_URLCONF = 'jwt_auth.urls'
-AUTH_USER_MODEL = "authentication.CustomUser"
 
 TEMPLATES = [
     {
@@ -274,6 +276,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+AUTH_USER_MODEL = "authentication.User"
 
 # Internationalization
 # https://docs.djangoproject.com/en/3.2/topics/i18n/

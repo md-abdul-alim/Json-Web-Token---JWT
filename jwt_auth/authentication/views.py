@@ -1,10 +1,12 @@
 from django.shortcuts import render
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError, InvalidToken
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CustomTokenObtainPairSerializer, CustomUserSerializer
+from rest_framework.viewsets import ModelViewSet
+from .serializers import CustomTokenObtainPairSerializer, UserRegisterSerializer
 # Create your views here.
 
 
@@ -13,18 +15,39 @@ class CustomObtainTokenPairWithPhoneView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 
-class CustomUserCreateView(APIView):
+# Just Registration
+class UserRegistrationPostView(APIView):
     permission_classes = (permissions.AllowAny, )
+    http_method_names = ['post']
 
     def post(self, request, format='json'):
-        serializer = CustomUserSerializer(data=request.data)
-        if serializer.is_valid():
+        serializer = UserRegisterSerializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
             user = serializer.save()
             if user:
                 json = serializer.data
                 return Response(json, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+# Registration and Redirect
+class UserRegistrationCreateViewSet(ModelViewSet, TokenObtainPairView):
+    serializer_class = UserRegisterSerializer
+    permission_classes = (permissions.AllowAny,)
+    http_method_names = ['post']
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+
+            return Response({
+                'user': serializer.data,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            }, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutAndBlacklistRefreshTokenForUserView(APIView):
     permission_classes = (permissions.AllowAny, )
