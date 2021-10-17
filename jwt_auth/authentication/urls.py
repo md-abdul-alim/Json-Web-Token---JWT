@@ -7,7 +7,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
-from .views import CustomObtainTokenPairWithPhoneView, CustomUserCreateView, LogoutAndBlacklistRefreshTokenForUserView
+from .views import CustomObtainTokenPairWithPhoneView, CustomUserCreateView, LogoutAndBlacklistRefreshTokenForUserView, LogoutAllView
 
 urlpatterns = [
     path('token/obtain/pair/', TokenObtainPairView.as_view(), name='token_obtain_pair'),  # refresh & access token
@@ -21,4 +21,5 @@ urlpatterns = [
 
     path('user/create/', CustomUserCreateView.as_view(), name="create_user"),
     path('blacklist/', LogoutAndBlacklistRefreshTokenForUserView.as_view(), name='blacklist'),
+    path('logout_all/', LogoutAllView.as_view(), name='auth_logout_all'),
 ]

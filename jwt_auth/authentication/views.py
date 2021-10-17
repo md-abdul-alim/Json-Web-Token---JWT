@@ -1,6 +1,7 @@
 from django.shortcuts import render
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.tokens import RefreshToken, OutstandingToken, BlacklistedToken
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -39,3 +40,17 @@ class LogoutAndBlacklistRefreshTokenForUserView(APIView):
 
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+
+#https://medium.com/django-rest/logout-django-rest-framework-eb1b53ac6d35
+#LOGOUT FROM ALL DEVICES
+class LogoutAllView(APIView):
+    print("df")
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request):
+        tokens = OutstandingToken.objects.filter(user_id=request.user.id)
+        for token in tokens:
+            t, _ = BlacklistedToken.objects.get_or_create(token=token)
+
+        return Response(status=status.HTTP_205_RESET_CONTENT)
